@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advance RAG · Chat</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── LEFT SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🔍</div>
+        <div>
+          <div class="logo-name">Advance RAG</div>
+          <div class="logo-sub">BM25 · Dense · MMR · CrossEncoder</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Document section -->
+    <div class="upload-section">
+      <span class="section-label">Add Document</span>
+
+      <!-- Drop zone / click to upload -->
+      <div class="drop-zone" id="dropZone">
+        <input
+          type="file"
+          id="fileInput"
+          accept=".pdf,.docx,.csv,.txt,.jpg,.jpeg,.png"
+          multiple
+        />
+        <div class="drop-icon">📄</div>
+        <div class="drop-hint">
+          <strong>Click to upload</strong> or drag &amp; drop<br>
+          PDF · DOCX · CSV · TXT · JPG · PNG
+        </div>
+      </div>
+
+      <!-- Status line shown during/after upload -->
+      <div class="upload-status" id="uploadStatus"></div>
+    </div>
+
+    <!-- Ingested documents list -->
+    <div class="docs-section">
+      <span class="section-label">Knowledge Base</span>
+      <div id="docsList">
+        <div class="docs-empty">No documents yet — upload one above.</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN CHAT AREA ─────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-info">
+        <span class="topbar-title">Chat</span>
+        <span class="topbar-sep">·</span>
+        <span class="topbar-sub" id="topbarSub">Hybrid retrieval ready</span>
+      </div>
+      <div class="topbar-right">
+        <div class="api-status" id="apiStatus">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-label" id="statusLabel">Connecting…</span>
+        </div>
+        <!-- Sources panel toggle button -->
+        <button class="sources-btn" id="sourcesBtn">
+          Sources <span class="sources-badge" id="sourcesBadge">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Message list (populated by chat.js) -->
+    <div class="messages" id="messages">
+
+      <!-- Empty / welcome state -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-orb">🧠</div>
+        <h2 class="empty-title">What do you want to know?</h2>
+        <p class="empty-sub">
+          Ask anything about your documents. The pipeline retrieves the most
+          relevant chunks using hybrid BM25 + dense search, applies MMR
+          diversity selection, then cross-encoder reranking before answering.
+        </p>
+        <div class="starter-chips" id="starterChips">
+          <button class="chip">Summarise my documents</button>
+          <button class="chip">What are the key topics?</button>
+          <button class="chip">Find the most important facts</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <div class="input-row" id="inputRow">
+        <textarea
+          id="queryInput"
+          placeholder="Ask a question about your documents…"
+          rows="1"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" title="Send (Enter)">↑</button>
+      </div>
+      <div class="input-hint">
+        <kbd>Enter</kbd> send · <kbd>Shift+Enter</kbd> new line
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── RIGHT SOURCES PANEL ────────────────────────────────────────────── -->
+  <aside class="sources-panel" id="sourcesPanel">
+    <div class="sources-header">
+      <h3>Retrieved Sources</h3>
+      <span class="sources-count" id="sourcesCount">0 chunks</span>
+    </div>
+    <div class="sources-body" id="sourcesBody">
+      <div class="sources-empty">
+        Ask a question to see which chunks were retrieved, reranked, and passed to the LLM.
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Load JS modules in dependency order -->
+<script src="/static/js/upload.js"></script>
+<script src="/static/js/sources.js"></script>
+<script src="/static/js/chat.js"></script>
+<script src="/static/js/app.js"></script>
+
+</body>
+</html>

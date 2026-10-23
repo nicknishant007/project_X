@@ -1,0 +1,68 @@
+# ===========================
+# Core FastAPI
+# ===========================
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+pydantic-settings
+aiofiles
+httpx
+requests
+
+# ===========================
+# LangChain
+# ===========================
+langchain
+langchain-core
+langchain-community
+langchain-text-splitters
+langchain-google-genai
+
+# ===========================
+# Embeddings & LLMs
+# ===========================
+sentence-transformers
+transformers
+accelerate
+torch
+tiktoken
+
+# ===========================
+# Vector Database
+# ===========================
+qdrant-client
+
+# ===========================
+# Retrieval
+# ===========================
+rank-bm25
+numpy
+scikit-learn
+
+# ===========================
+# Document Loaders
+# ===========================
+pymupdf
+pypdf
+python-docx
+python-pptx
+openpyxl
+pandas
+pillow
+pytesseract
+beautifulsoup4
+lxml
+unstructured
+
+# ===========================
+# Utilities
+# ===========================
+pyyaml
+tqdm
+python-dateutil
+
+# ===========================
+# Optional OCR (recommended)
+# ===========================
+opencv-python

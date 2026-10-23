@@ -1,0 +1,6 @@
+run: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+on websit :http://localhost:8000/
+
+NOTE: Run  this is console to show side bar"document.getElementById('sourcesPanel').classList.add('open')"
+#side bar is working like this only 
