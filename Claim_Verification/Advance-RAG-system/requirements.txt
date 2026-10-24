@@ -54,6 +54,7 @@ pytesseract
 beautifulsoup4
 lxml
 unstructured
+docling
 
 # ===========================
 # Utilities

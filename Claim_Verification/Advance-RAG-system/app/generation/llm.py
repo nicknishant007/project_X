@@ -19,10 +19,10 @@ class LLM:
             cls._llm = init_chat_model(
                 model="gemini-2.5-flash",
                 model_provider="google_genai",
-                temperature=0.5,
-                max_tokens=3000,
+                temperature=0.3,
+                max_tokens=8000,
                 max_retries=3,
-                timeout=30,
+                timeout=60,
                 streaming=True
             )
 

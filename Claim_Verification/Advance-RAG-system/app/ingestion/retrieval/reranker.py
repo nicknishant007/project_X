@@ -1,4 +1,3 @@
-
 from sentence_transformers import (
     CrossEncoder
 )

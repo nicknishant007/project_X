@@ -22,8 +22,8 @@ class HybridRetriever:
     def retrieve(
         self,
         query,
-        dense_top_k=15,
-        sparse_top_k=7,
+        dense_top_k=8,
+        sparse_top_k=8,
     ):
 
         # Query embedding for semantic search
