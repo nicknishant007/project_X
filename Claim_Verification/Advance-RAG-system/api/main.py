@@ -1,3 +1,4 @@
+
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -36,29 +37,32 @@ from api.services.rag_service import RAGService
 async def lifespan(app: FastAPI):
 
     print("=" * 70)
-    print("🚀 Starting Advance RAG System...")
+    print("Starting Advance RAG System...")
     print("=" * 70)
 
+    # Initialize the SQLite registry before accepting uploads.
     try:
-
         print("Initializing registry...")
         IngestService.initialize_registry()
+        print("Registry initialized successfully.")
 
-        print("Loading embedding model...")
-        print("Loading reranker model...")
+        print("Warming up RAG services...")
         RAGService.warmup()
 
-        print("✅ System Ready")
+        app.state.ready = True
+        print("System Ready")
 
-    except Exception as e:
+    except Exception as exc:
+        app.state.ready = False
+        print(f"Startup failed: {type(exc).__name__}: {exc}")
 
-        print("Startup Error")
-        print(e)
+        # Do not silently start a partially initialized application.
+        raise
 
     yield
 
     print("=" * 70)
-    print("Shutting down...")
+    print("Shutting down Advance RAG System...")
     print("=" * 70)
 
 
@@ -67,46 +71,33 @@ async def lifespan(app: FastAPI):
 # ====================================================================
 
 app = FastAPI(
-
     title="Advance RAG System",
-
     description="""
 Hybrid RAG System
 
-• BM25 Retrieval
-
-• Dense Retrieval
-
-• MMR
-
-• Cross Encoder
-
-• Gemini Streaming
+- BM25 Retrieval
+- Dense Retrieval
+- MMR
+- Cross Encoder
+- Gemini Streaming
 """,
-
     version="1.0.0",
-
     lifespan=lifespan,
 )
+
 
 # ====================================================================
 # CORS
 # ====================================================================
 
 app.add_middleware(
-
     CORSMiddleware,
-
-    allow_origins=[
-        "*"
-    ],
-
+    allow_origins=["*"],
     allow_credentials=True,
-
     allow_methods=["*"],
-
     allow_headers=["*"],
 )
+
 
 # ====================================================================
 # Static Files
@@ -119,11 +110,15 @@ print("FRONTEND:", FRONTEND)
 print("FRONTEND EXISTS:", FRONTEND.exists())
 print("STYLE EXISTS:", (FRONTEND / "css" / "style.css").exists())
 
+if not FRONTEND.is_dir():
+    raise RuntimeError(f"Frontend directory not found: {FRONTEND}")
+
 app.mount(
     "/static",
-    StaticFiles(directory=FRONTEND),
+    StaticFiles(directory=str(FRONTEND)),
     name="static",
 )
+
 
 # ====================================================================
 # Home Page
@@ -131,10 +126,8 @@ app.mount(
 
 @app.get("/", include_in_schema=False)
 async def home():
+    return FileResponse(FRONTEND / "index.html")
 
-    return FileResponse(
-        FRONTEND / "index.html"
-    )
 
 # ====================================================================
 # Health
@@ -142,37 +135,28 @@ async def home():
 
 @app.get("/health")
 async def health():
+    ready = getattr(app.state, "ready", False)
 
     return {
-
-        "status": "ok",
-
+        "status": "ok" if ready else "starting_or_failed",
         "service": "Advance RAG System",
-
-        "version": "1.0.0"
-
+        "version": "1.0.0",
+        "ready": ready,
     }
+
 
 # ====================================================================
 # Routers
 # ====================================================================
 
 app.include_router(
-
     chat_router,
-
     prefix="/chat",
-
-    tags=["Chat"]
-
+    tags=["Chat"],
 )
 
 app.include_router(
-
     ingest_router,
-
     prefix="/ingest",
-
-    tags=["Ingestion"]
-
+    tags=["Ingestion"],
 )

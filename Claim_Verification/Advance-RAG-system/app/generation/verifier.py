@@ -14,22 +14,86 @@ VALID_STATUSES = {"match", "mismatch", "unclear"}
 
 
 class ClaimVerifier:
-    """Validate LLM evidence and build assignment-format predictions."""
+    """
+    Lightweight, deterministic validation of LLM claim-verification results.
+
+    This class:
+      - Makes ZERO LLM calls.
+      - Validates the four check objects returned by the LLM.
+      - Confirms evidence quotations occur in retrieved chunks.
+      - Uses retrieved metadata for evidence page numbers.
+      - Computes numerical ratios when source values are unambiguous.
+      - Produces the final prediction schema expected by OutputWriter.
+
+    The LLM remains responsible for semantic reasoning.
+    Python validates traceability, structure, and arithmetic.
+    """
 
     @staticmethod
+    def _normalise_text(value: Any) -> str:
+        if not isinstance(value, str):
+            return ""
+        return re.sub(r"\s+", " ", value).strip()
+
+    @staticmethod
+    def _page_number(evidence_item: dict[str, Any]) -> int | None:
+        """Return a page number only when supported by source metadata."""
+        metadata = evidence_item.get("metadata") or {}
+
+        for key in ("evidence_page", "page_number", "page_no", "page"):
+            value = metadata.get(key)
+
+            if isinstance(value, bool):
+                continue
+
+            if isinstance(value, int):
+                # Common PDF loaders use zero-based page metadata.
+                if key == "page":
+                    return value + 1 if value >= 0 else None
+                return value if value > 0 else None
+
+            if isinstance(value, str) and value.isdigit():
+                number = int(value)
+                if key == "page":
+                    return number + 1
+                return number if number > 0 else None
+
+        for key in ("page_numbers", "pages"):
+            pages = metadata.get(key)
+            if isinstance(pages, list) and len(pages) == 1:
+                value = pages[0]
+                if isinstance(value, int) and value > 0:
+                    return value
+                if isinstance(value, str) and value.isdigit():
+                    number = int(value)
+                    if number > 0:
+                        return number
+
+        return None
+
+    @classmethod
     def _find_evidence(
-        span: Any,
+        cls,
+        evidence_span: Any,
         evidence: list[dict[str, Any]],
     ) -> dict[str, Any] | None:
-        """Find a retrieved chunk containing the quoted text."""
+        """
+        Find a verbatim quotation in the retrieved chunks.
 
-        if not isinstance(span, str) or not span.strip():
+        Whitespace differences are tolerated, but the quotation must
+        otherwise match the source text.
+        """
+        if not isinstance(evidence_span, str) or not evidence_span.strip():
             return None
 
-        # Exact substring match; no fuzzy quote validation.
+        quote = cls._normalise_text(evidence_span)
+
         for item in evidence:
-            text = item.get("text", "")
-            if isinstance(text, str) and span in text:
+            source_text = item.get("text", "")
+            if not isinstance(source_text, str):
+                continue
+
+            if quote in cls._normalise_text(source_text):
                 return item
 
         return None
@@ -37,171 +101,218 @@ class ClaimVerifier:
     @classmethod
     def _validate_check(
         cls,
-        check: dict[str, Any],
+        raw_check: Any,
         evidence: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        """Validate a check's status, quotation, and page metadata."""
+        """Validate one LLM check without repeating semantic reasoning."""
+        if not isinstance(raw_check, dict):
+            return {
+                "status": "unclear",
+                "evidence_page": None,
+                "evidence_span": None,
+                "source_values": None,
+                "reason": "Missing or invalid check object from the LLM.",
+            }
 
-        status = check.get("status", "unclear")
-        span = check.get("evidence_span")
-        page = check.get("evidence_page")
+        status = raw_check.get("status")
+        reason = raw_check.get("reason", "")
 
         if status not in VALID_STATUSES:
-            status = "unclear"
-
-        source = cls._find_evidence(span, evidence)
-
-        # A match/mismatch needs a traceable quotation.
-        if source is None:
             return {
                 "status": "unclear",
                 "evidence_page": None,
                 "evidence_span": None,
                 "source_values": None,
-                "reason": "The quoted evidence could not be validated.",
+                "reason": "The LLM returned an invalid check status.",
             }
 
-        metadata = source.get("metadata") or {}
-        page_numbers = metadata.get("page_numbers") or []
-        metadata_page = metadata.get("evidence_page")
+        if not isinstance(reason, str):
+            reason = ""
 
-        valid_pages = set(page_numbers)
-        if metadata_page is not None:
-            valid_pages.add(metadata_page)
+        span = raw_check.get("evidence_span")
+        evidence_item = cls._find_evidence(span, evidence)
 
-        if page is not None and valid_pages and page not in valid_pages:
+        # A semantic status without traceable evidence cannot be trusted.
+        if evidence_item is None:
             return {
                 "status": "unclear",
                 "evidence_page": None,
                 "evidence_span": None,
                 "source_values": None,
-                "reason": "The cited page conflicts with evidence metadata.",
+                "reason": (
+                    "The supporting quotation is missing or could not "
+                    "be located in the retrieved evidence."
+                ),
             }
 
-        if page is None:
-            if metadata_page is not None:
-                page = metadata_page
-            elif len(page_numbers) == 1:
-                page = page_numbers[0]
+        source_values = raw_check.get("source_values")
 
-        # If the source has page metadata, do not accept an unlisted page.
-        if page is not None and valid_pages and page not in valid_pages:
-            page = None
+        # Accept only JSON-compatible source values.
+        if not isinstance(source_values, (list, dict, type(None))):
+            source_values = None
 
         return {
             "status": status,
-            "evidence_page": page,
+            "evidence_page": cls._page_number(evidence_item),
             "evidence_span": span,
-            "source_values": check.get("source_values"),
-            "reason": str(
-                check.get("reason")
-                or "No explanation was supplied by the LLM."
-            ),
+            "source_values": source_values,
+            "reason": reason,
         }
 
     @staticmethod
-    def _extract_claimed_multiplier(claim_text: str) -> float | None:
-        """Extract claims such as '2x', '~2×', or '1.5-fold'."""
+    def _claimed_multiplier(claim_text: str) -> float | None:
+        """Extract an explicit multiplier such as '~2x' or '2-fold'."""
+        if not isinstance(claim_text, str):
+            return None
 
         patterns = (
-            r"~?\s*(\d+(?:\.\d+)?)\s*[xX×]\b",
-            r"~?\s*(\d+(?:\.\d+)?)\s*[- ]?fold\b",
+            r"~\s*(\d+(?:\.\d+)?)\s*x\b",
+            r"(\d+(?:\.\d+)?)\s*[- ]?fold\b",
+            r"(\d+(?:\.\d+)?)\s*x\b",
+            r"(\d+(?:\.\d+)?)\s*times\b",
         )
 
         for pattern in patterns:
-            match = re.search(pattern, claim_text, flags=re.IGNORECASE)
+            match = re.search(pattern, claim_text, re.IGNORECASE)
             if match:
-                return float(match.group(1))
+                value = float(match.group(1))
+                if value > 0:
+                    return value
 
         return None
 
     @staticmethod
-    def _compute_figure(
-        claim: dict[str, Any],
-        figure_check: dict[str, Any],
-    ) -> dict[str, Any] | None:
-        """
-        Calculate a ratio from exactly two positive source values.
-
-        This calculation is valid only when the LLM has extracted the
-        two values in the intended numerator/denominator order from
-        validated evidence. It does not independently prove their meaning.
-        """
-
-        values = figure_check.get("source_values")
-
-        if not isinstance(values, list) or len(values) != 2:
+    def _numeric_value(item: Any) -> float | None:
+        """Read a number from a structured source-value object."""
+        if not isinstance(item, dict):
             return None
 
-        # Booleans are integers in Python; explicitly reject them.
-        if any(
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-            for value in values
-        ):
+        value = item.get("value")
+
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
             return None
 
-        numerator, denominator = values
-
-        if (
-            numerator <= 0
-            or denominator <= 0
-        ):
-            return None
-
-        claimed_multiplier = ClaimVerifier._extract_claimed_multiplier(
-            claim.get("text", "")
-        )
-
-        if claimed_multiplier is None:
-            return None
-
-        result = numerator / denominator
-
-        return {
-            "claimed": f"~{claimed_multiplier:g}x",
-            "from_source": [numerator, denominator],
-            "result": f"{result:.2f}x",
-        }
+        return float(value)
 
     @staticmethod
-    def _format_reason(
-        verdict: str,
-        checks: dict[str, str],
-        computed: dict[str, Any] | None,
-    ) -> str:
-        """Create a concise reviewer-facing explanation."""
+    def _label(value: Any) -> str:
+        if not isinstance(value, str):
+            return ""
+        return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
 
-        if verdict == "supported":
-            return (
-                "All four checks passed evidence validation, and any "
-                "applicable numerical comparison was calculated."
-            )
+    @classmethod
+    def _arm_role(cls, value: Any) -> str | None:
+        """
+        Identify an arm only when its label explicitly identifies its role.
+        Ambiguous treatment names are not guessed.
+        """
+        label = cls._label(value)
 
-        mismatches = [
-            name for name, status in checks.items()
-            if status == "mismatch"
+        treatment_labels = {
+            "treatment arm",
+            "treatment group",
+            "intervention arm",
+            "intervention group",
+            "experimental arm",
+            "experimental group",
+        }
+
+        comparator_labels = {
+            "comparator arm",
+            "comparator group",
+            "control arm",
+            "control group",
+            "comparison arm",
+            "comparison group",
+            "placebo arm",
+            "placebo group",
+        }
+
+        if label in treatment_labels:
+            return "treatment"
+
+        if label in comparator_labels:
+            return "comparator"
+
+        return None
+
+    @classmethod
+    def _compute_figure(
+        cls,
+        claim_text: str,
+        source_values: Any,
+    ) -> dict[str, Any] | None:
+        """
+        Calculate treatment/comparator ratio using Python.
+
+        Expected source_values format:
+        [
+            {
+                "value": 1.63,
+                "measure": "HbA1c reduction",
+                "unit": "percentage points",
+                "arm": "treatment arm",
+                "timepoint": "Week 30"
+            },
+            {
+                "value": 1.34,
+                "measure": "HbA1c reduction",
+                "unit": "percentage points",
+                "arm": "comparator arm",
+                "timepoint": "Week 30"
+            }
         ]
 
-        if verdict == "overstated":
-            details = ", ".join(mismatches)
-            if computed:
-                return (
-                    f"The evidence indicates that the claim exceeds "
-                    f"the source result ({computed['result']} versus "
-                    f"{computed['claimed']}); check(s) marked mismatch: "
-                    f"{details}."
-                )
-            return (
-                f"Validated evidence indicates that the claim exceeds "
-                f"the source; check(s) marked mismatch: {details}."
-            )
+        Returns None if the values cannot safely be compared.
+        Does not apply an arbitrary percentage tolerance.
+        """
+        claimed = cls._claimed_multiplier(claim_text)
 
-        return (
-            "The claim could not be verified reliably because evidence, "
-            "page attribution, or a required comparison was insufficient "
-            "or ambiguous."
+        if claimed is None:
+            return None
+
+        if not isinstance(source_values, list) or len(source_values) != 2:
+            return None
+
+        first, second = source_values
+
+        first_value = cls._numeric_value(first)
+        second_value = cls._numeric_value(second)
+
+        if first_value is None or second_value is None:
+            return None
+
+        if first_value <= 0 or second_value <= 0:
+            return None
+
+        # Require the same outcome, units, and timepoint.
+        for key in ("measure", "unit", "timepoint"):
+            first_label = cls._label(first.get(key))
+            second_label = cls._label(second.get(key))
+
+            if not first_label or first_label != second_label:
+                return None
+
+        first_role = cls._arm_role(first.get("arm"))
+        second_role = cls._arm_role(second.get("arm"))
+
+        if {first_role, second_role} != {"treatment", "comparator"}:
+            return None
+
+        treatment_value = (
+            first_value if first_role == "treatment" else second_value
         )
+        comparator_value = (
+            first_value if first_role == "comparator" else second_value
+        )
+
+        ratio = treatment_value / comparator_value
+
+        return {
+            "claimed": f"~{claimed:g}x",
+            "from_source": [treatment_value, comparator_value],
+            "result": f"{ratio:.2f}x",
+        }
 
     @classmethod
     def verify_batch(
@@ -209,29 +320,64 @@ class ClaimVerifier:
         batch: list[dict[str, Any]],
         llm_predictions: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Return predictions using the assignment's output schema."""
+        """
+        Verify a complete batch.
 
-        predictions_by_id = {
-            item.get("claim_id"): item
-            for item in llm_predictions
-            if isinstance(item, dict)
-        }
+        Compatible with:
+            ClaimVerifier.verify_batch(
+                batch=batch,
+                llm_predictions=llm_analyses,
+            )
 
-        final_predictions = []
+        Returns final predictions for OutputWriter.
+        """
+        if not isinstance(batch, list):
+            raise TypeError("batch must be a list.")
+
+        if not isinstance(llm_predictions, list):
+            raise TypeError("llm_predictions must be a list.")
+
+        analyses_by_id: dict[str, dict[str, Any]] = {}
+
+        for analysis in llm_predictions:
+            if not isinstance(analysis, dict):
+                continue
+
+            claim_id = analysis.get("claim_id")
+
+            if not isinstance(claim_id, str) or not claim_id:
+                continue
+
+            if claim_id in analyses_by_id:
+                raise ValueError(
+                    f"Duplicate LLM analysis for claim_id: {claim_id}"
+                )
+
+            analyses_by_id[claim_id] = analysis
+
+        results = []
 
         for item in batch:
-            claim = item["claim"]
-            claim_id = claim["claim_id"]
+            claim = item.get("claim", {})
+            claim_id = claim.get("claim_id")
+            claim_text = claim.get("text", "")
             evidence = item.get("evidence", [])
-            llm_result = predictions_by_id.get(claim_id)
 
-            # Safe default: no claim is supported without analysis/evidence.
+            if not isinstance(claim_id, str) or not claim_id:
+                raise ValueError("A batch item is missing claim.claim_id.")
+
+            if not isinstance(evidence, list):
+                evidence = []
+
+            analysis = analyses_by_id.get(claim_id)
+
+            # Missing model output or evidence must never become supported.
             if (
-                item.get("retrieval_error")
+                analysis is None
+                or item.get("retrieval_error")
                 or not evidence
-                or llm_result is None
             ):
-                final_predictions.append({
+                results.append({
                     "claim_id": claim_id,
                     "verdict": "cannot_verify",
                     "checks": {
@@ -241,95 +387,85 @@ class ClaimVerifier:
                     "evidence_span": None,
                     "computed": None,
                     "reason": (
-                        "Evidence retrieval or LLM analysis failed; "
-                        "the claim cannot be verified."
+                        "Missing LLM analysis or usable retrieved evidence."
                     ),
                 })
                 continue
 
-            raw_checks = llm_result.get("checks", {})
+            raw_checks = analysis.get("checks", {})
             if not isinstance(raw_checks, dict):
                 raw_checks = {}
 
-            validated = {}
-
-            for name in REQUIRED_CHECKS:
-                raw_check = raw_checks.get(name, {})
-                if not isinstance(raw_check, dict):
-                    raw_check = {}
-
-                validated[name] = cls._validate_check(
-                    raw_check,
+            validated = {
+                name: cls._validate_check(
+                    raw_checks.get(name),
                     evidence,
                 )
-
-            # The public schema requires simple status strings.
-            checks = {
-                name: validated[name]["status"]
                 for name in REQUIRED_CHECKS
             }
 
-            # Use the figure check's validated quote as primary evidence.
-            primary = validated["figure"]
-
-            if not primary["evidence_span"]:
-                # Fall back to another validated check's quotation.
-                primary = next(
-                    (
-                        validated[name]
-                        for name in REQUIRED_CHECKS
-                        if validated[name]["evidence_span"]
-                    ),
-                    {
-                        "evidence_page": None,
-                        "evidence_span": None,
-                    },
-                )
-
             computed = cls._compute_figure(
-                claim,
-                validated["figure"],
+                claim_text=claim_text,
+                source_values=validated["figure"]["source_values"],
             )
 
-            # A figure mismatch must not be accepted if a required
-            # numerical calculation could not be performed.
+            # If the claim makes a numerical multiplier assertion, failure
+            # to calculate it safely means the figure cannot be verified.
             if (
-                checks["figure"] != "unclear"
-                and cls._extract_claimed_multiplier(claim.get("text", ""))
-                is not None
+                cls._claimed_multiplier(claim_text) is not None
                 and computed is None
+                and validated["figure"]["status"] == "match"
             ):
-                checks["figure"] = "unclear"
+                validated["figure"]["status"] = "unclear"
+                validated["figure"]["reason"] = (
+                    "The numerical claim could not be independently "
+                    "calculated from compatible, clearly labelled "
+                    "source values."
+                )
 
-            if any(status == "unclear" for status in checks.values()):
+            statuses = [
+                validated[name]["status"]
+                for name in REQUIRED_CHECKS
+            ]
+
+            # The LLM supplies semantic judgments. Python enforces
+            # evidence traceability and fails closed on uncertainty.
+            if "unclear" in statuses:
                 verdict = "cannot_verify"
-            elif any(status == "mismatch" for status in checks.values()):
+            elif "mismatch" in statuses:
                 verdict = "overstated"
             else:
                 verdict = "supported"
 
-            # When a numeric comparison is available, ensure it agrees
-            # with the claimed multiplier before allowing "supported".
-            if computed is not None:
-                claimed = cls._extract_claimed_multiplier(claim["text"])
-                source_result = float(computed["result"].removesuffix("x"))
+            # Prefer the figure evidence, then another validated quote.
+            primary = validated["figure"]
 
-                # A 20% relative tolerance is an explicit provisional
-                # rule for approximate multiplier claims.
-                if abs(source_result - claimed) / claimed > 0.20:
-                    checks["figure"] = "mismatch"
-                    verdict = "overstated"
+            if not primary["evidence_span"]:
+                for name in REQUIRED_CHECKS:
+                    if validated[name]["evidence_span"]:
+                        primary = validated[name]
+                        break
 
-            reason = cls._format_reason(verdict, checks, computed)
+            reasons = [
+                f"{name}: {validated[name]['reason']}"
+                for name in REQUIRED_CHECKS
+                if validated[name]["reason"]
+            ]
 
-            final_predictions.append({
+            results.append({
                 "claim_id": claim_id,
                 "verdict": verdict,
-                "checks": checks,
+                "checks": {
+                    name: validated[name]["status"]
+                    for name in REQUIRED_CHECKS
+                },
                 "evidence_page": primary["evidence_page"],
                 "evidence_span": primary["evidence_span"],
                 "computed": computed,
-                "reason": reason,
+                "reason": " ".join(reasons) or (
+                    "The LLM's checks were validated against retrieved "
+                    "evidence."
+                ),
             })
 
-        return final_predictions
+        return results

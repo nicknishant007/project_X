@@ -1,45 +1,66 @@
+
 import os
+from pathlib import Path
+
 import yaml
 
-CONFIG_PATH = "configs/ingestion.yaml"
 
-with open(CONFIG_PATH, 'r') as file:
-    config = yaml.safe_load(file)
+# Project root: app/ingestion/scanner/local_scanner.py -> project root
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+CONFIG_PATH = PROJECT_ROOT / "configs" / "ingestion.yaml"
 
-DATA_DIR = config['data_dir']
 
-SUPPORTED_FORMATS = set(config['supported_extensions'])
+def load_config():
+    if not CONFIG_PATH.is_file():
+        raise FileNotFoundError(
+            f"Ingestion config not found: {CONFIG_PATH}"
+        )
+
+    with CONFIG_PATH.open("r", encoding="utf-8") as file:
+        config = yaml.safe_load(file) or {}
+
+    if not isinstance(config, dict):
+        raise ValueError("ingestion.yaml must contain a YAML mapping.")
+
+    if not config.get("data_dir"):
+        raise ValueError("'data_dir' is missing from ingestion.yaml.")
+
+    if not config.get("supported_extensions"):
+        raise ValueError(
+            "'supported_extensions' is missing or empty in ingestion.yaml."
+        )
+
+    return config
+
+
+_CONFIG = load_config()
+
+DATA_DIR = Path(_CONFIG["data_dir"])
+if not DATA_DIR.is_absolute():
+    DATA_DIR = PROJECT_ROOT / DATA_DIR
+
+SUPPORTED_FORMATS = {
+    ext.lower() if ext.startswith(".") else f".{ext.lower()}"
+    for ext in _CONFIG["supported_extensions"]
+}
+
 
 class LocalScanner:
     @staticmethod
     def scan():
-        for root, _, files in os.walk(DATA_DIR):
-            for file_name in files:
-                
-                extension=os.path.splitext(file_name)[1].lower()
+        """Yield absolute paths for supported files, recursively."""
+
+        if not DATA_DIR.is_dir():
+            raise FileNotFoundError(
+                f"Data directory does not exist: {DATA_DIR}"
+            )
+
+        for root, dirs, files in os.walk(DATA_DIR):
+            # Stable traversal order makes runs reproducible.
+            dirs.sort()
+
+            for file_name in sorted(files):
+                extension = Path(file_name).suffix.lower()
 
                 if extension in SUPPORTED_FORMATS:
-                    yield os.path.join(root, file_name)
-
-
-#VERY VERY IMPORTANT
-
-'''os=folder retrieval and file path handling
-yaml=configuration management
-DATA_DIR=directory to scan for files
-SUPPORTED_FORMATS=set of file extensions to process(in config)
-@staticmethod=method that can be called without creating an instance of the class
-scan method=walks through the directory and yields file paths that match supported formats
-for root, _, files in os.walk(DATA_DIR)=traverse the directory tree
-os.path.splitext(file_name)[1].lower()=get file extension and convert to lowercase
-if extension in SUPPORTED_FORMATS=check if the file extension is supported
-yield os.path.join(root, file_name)=return the full path of the file for processing
-
-#IMPORTANT
-data/incoming
-      ↓
-Recursive folder scan
-      ↓
-Supported files only
-      ↓
-Yield file paths'''
+                    yield str(Path(root) / file_name)

@@ -1,19 +1,31 @@
+
+from pathlib import Path
 import sqlite3
 
-DB_PATH = "storage/registry.db"
+
+# db.py location:
+# app/ingestion/registry/db.py
+# Project root is three levels above this file's parent directory.
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+STORAGE_DIR = PROJECT_ROOT / "storage"
+STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+DB_PATH = STORAGE_DIR / "registry.db"
 
 
-def get_connection():
+def get_connection() -> sqlite3.Connection:
+    """Create a connection to the registry database."""
 
     conn = sqlite3.connect(
-        DB_PATH,
+        str(DB_PATH),
         timeout=30,
-        check_same_thread=False
+        check_same_thread=False,
     )
 
-    conn.execute(
-        "PRAGMA journal_mode=WAL;"
-    )
+    # Improve concurrent read/write behavior.
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=30000;")
 
     return conn
 
