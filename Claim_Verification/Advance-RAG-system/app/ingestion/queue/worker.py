@@ -1,4 +1,3 @@
-
 import uuid
 
 from app.ingestion.registry.hash import generate_file_hash
