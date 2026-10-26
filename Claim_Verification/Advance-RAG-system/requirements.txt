@@ -27,7 +27,7 @@ transformers
 accelerate
 torch
 tiktoken
-
+langchain-experimental
 # ===========================
 # Vector Database
 # ===========================

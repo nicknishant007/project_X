@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
 # --------------------------------------------------------------------
 from api.routes.chat import router as chat_router
 from api.routes.ingest import router as ingest_router
-
+from api.routes.verify import router as verify_router
 # --------------------------------------------------------------------
 # Services
 # --------------------------------------------------------------------
@@ -160,3 +160,5 @@ app.include_router(
     prefix="/ingest",
     tags=["Ingestion"],
 )
+
+app.include_router(verify_router, prefix="/verify", tags=["Verify"])

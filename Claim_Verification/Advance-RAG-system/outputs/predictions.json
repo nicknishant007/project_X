@@ -1,0 +1,102 @@
+{
+  "predictions": [
+    {
+      "claim_id": "C1",
+      "verdict": "cannot_verify",
+      "checks": {
+        "figure": "unclear",
+        "population": "unclear",
+        "drug_indication": "unclear",
+        "actually_stated": "unclear"
+      },
+      "evidence_page": null,
+      "evidence_span": null,
+      "computed": null,
+      "reason": "LookupError: Cited paper 'SOLIQUA_LBL.pdf (Prescribing Information, page 4)' is not indexed (indexed: ['C2C4C6 (1)', 'C3', 'C5C7 (3)', 'C7']). Ingest the PDF first. Refusing to use evidence from another paper."
+    },
+    {
+      "claim_id": "C2",
+      "verdict": "cannot_verify",
+      "checks": {
+        "figure": "unclear",
+        "population": "unclear",
+        "drug_indication": "unclear",
+        "actually_stated": "unclear"
+      },
+      "evidence_page": null,
+      "evidence_span": null,
+      "computed": null,
+      "reason": "LookupError: Cited paper 'papers/SoliMix_Rosenstock2021.pdf' is not indexed (indexed: ['C2C4C6 (1)', 'C3', 'C5C7 (3)', 'C7']). Ingest the PDF first. Refusing to use evidence from another paper."
+    },
+    {
+      "claim_id": "C3",
+      "verdict": "cannot_verify",
+      "checks": {
+        "figure": "unclear",
+        "population": "unclear",
+        "drug_indication": "unclear",
+        "actually_stated": "unclear"
+      },
+      "evidence_page": null,
+      "evidence_span": null,
+      "computed": null,
+      "reason": "LookupError: Cited paper 'papers/LixiLan-O_Rosenstock2016.pdf' is not indexed (indexed: ['C2C4C6 (1)', 'C3', 'C5C7 (3)', 'C7']). Ingest the PDF first. Refusing to use evidence from another paper."
+    },
+    {
+      "claim_id": "C4",
+      "verdict": "cannot_verify",
+      "checks": {
+        "figure": "unclear",
+        "population": "unclear",
+        "drug_indication": "unclear",
+        "actually_stated": "unclear"
+      },
+      "evidence_page": null,
+      "evidence_span": null,
+      "computed": null,
+      "reason": "LookupError: Cited paper 'papers/SoliMix_Rosenstock2021.pdf' is not indexed (indexed: ['C2C4C6 (1)', 'C3', 'C5C7 (3)', 'C7']). Ingest the PDF first. Refusing to use evidence from another paper."
+    },
+    {
+      "claim_id": "C5",
+      "verdict": "cannot_verify",
+      "checks": {
+        "figure": "unclear",
+        "population": "unclear",
+        "drug_indication": "unclear",
+        "actually_stated": "unclear"
+      },
+      "evidence_page": null,
+      "evidence_span": null,
+      "computed": null,
+      "reason": "LookupError: Cited paper 'papers/LixiLan-L_Aroda2016_abstract.pdf' is not indexed (indexed: ['C2C4C6 (1)', 'C3', 'C5C7 (3)', 'C7']). Ingest the PDF first. Refusing to use evidence from another paper."
+    },
+    {
+      "claim_id": "C6",
+      "verdict": "cannot_verify",
+      "checks": {
+        "figure": "unclear",
+        "population": "unclear",
+        "drug_indication": "unclear",
+        "actually_stated": "unclear"
+      },
+      "evidence_page": null,
+      "evidence_span": null,
+      "computed": null,
+      "reason": "LookupError: Cited paper 'papers/SoliMix_Rosenstock2021.pdf' is not indexed (indexed: ['C2C4C6 (1)', 'C3', 'C5C7 (3)', 'C7']). Ingest the PDF first. Refusing to use evidence from another paper."
+    },
+    {
+      "claim_id": "C7",
+      "verdict": "cannot_verify",
+      "checks": {
+        "figure": "unclear",
+        "population": "unclear",
+        "drug_indication": "unclear",
+        "actually_stated": "unclear"
+      },
+      "evidence_page": null,
+      "evidence_span": null,
+      "computed": null,
+      "reason": "LookupError: Cited paper 'papers/Tabak2020_PSM.pdf (plus LixiLan-L abstract and SoliMix)' is not indexed (indexed: ['C2C4C6 (1)', 'C3', 'C5C7 (3)', 'C7']). Ingest the PDF first. Refusing to use evidence from another paper."
+    }
+  ]
+}

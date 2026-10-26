@@ -39,7 +39,8 @@ IMPORTANT RULES:
 15. Preserve every original claim_id exactly.
 16. Return valid JSON only, without Markdown or additional prose.
 17. Do not output a final verdict.
-
+18. evidence_span must come from ONE evidence item, be short (one sentence or one table row)and include the numbers it supports.
+19. Mark "mismatch" only when the evidence states a different number/population/drug/timepoint.
 REQUIRED CHECKS:
 
 A. figure

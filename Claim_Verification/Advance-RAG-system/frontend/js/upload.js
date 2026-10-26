@@ -98,7 +98,7 @@ const Upload = (() => {
   }
 
   /* ── Upload a single file ─────────────────────────────────────────────────── */
-
+ if(file.name.toLowerCase().endsWith('.json')) {return Verify.run(file, apiBase);}
   async function uploadFile(file, apiBase) {
     showStatus('loading', `Uploading "${file.name}"…`);
 
