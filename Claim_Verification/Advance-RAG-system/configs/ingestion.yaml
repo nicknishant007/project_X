@@ -1,35 +1,20 @@
 data_dir: "data/incoming"
 
+# The clinical processor is PDF-only; other types used to crash the pipeline.
 supported_extensions:
   - ".pdf"
-  - ".docx"
-  - ".pptx"
-  - ".xlsx"
-  - ".csv"
-  - ".txt"
-  - ".png"
-  - ".jpg"
-  - ".jpeg"
-  - ".html"
-  - ".json"
 
 chunking:
   chunk_size: 600
   chunk_overlap: 150
 
 workers:
-  max_workers: 4
+  max_workers: 1   # local Qdrant + Docling are not safe for concurrent ingestion
 
 retrieval:
-
   mmr:
-
     enabled: true
-
     top_k: 8
-
     lambda: 0.5
-
     threshold_ratio: 0.75
-
     minimum_threshold: 0.60

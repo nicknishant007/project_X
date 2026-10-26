@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -13,13 +14,6 @@ logger = logging.getLogger(__name__)
 
 class ResponseGenerator:
     LOG_PATH = Path("outputs/llm_log.jsonl")
-    MODEL_PARAMETERS = {
-        "model": "gemini-2.5-flash",
-        "temperature": 0.3,
-        "max_tokens": 8000,
-        "max_retries": 3,
-        "timeout": 60,
-    }
 
     @classmethod
     def _append_log(cls, record: dict[str, Any]) -> None:
@@ -34,24 +28,55 @@ class ResponseGenerator:
         content = getattr(response, "content", response)
         if isinstance(content, list):
             return "".join(
-                block.get("text", "")
+                block.get("text", "") if isinstance(block, dict) else str(block)
                 for block in content
-                if isinstance(block, dict)
             )
         if not isinstance(content, str):
             raise ValueError("LLM returned an unexpected response type.")
         return content
 
+    @staticmethod
+    def _parse_json(text: str) -> Any:
+        """Parse JSON, tolerating ```json fences / stray prose around the object."""
+        cleaned = text.strip()
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.S).strip()
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            start, end = cleaned.find("{"), cleaned.rfind("}")
+            if start != -1 and end > start:
+                return json.loads(cleaned[start:end + 1])
+            raise
+
+    @staticmethod
+    def _slim_evidence(evidence: list[dict]) -> list[dict]:
+        """Send the LLM only what it needs (no duplicated text / internal fields)."""
+        slim = []
+        for item in evidence:
+            md = item.get("metadata") or {}
+            slim.append({
+                "evidence_id": item.get("evidence_id"),
+                "text": item.get("text"),
+                "metadata": {
+                    "source": md.get("file_name") or md.get("cited_paper"),
+                    "evidence_page": md.get("evidence_page"),
+                    "page_numbers": md.get("page_numbers"),
+                    "section": md.get("section"),
+                    "element_type": md.get("element_type"),
+                },
+            })
+        return slim
+
     @classmethod
     def generate_batch(cls, batch: list[dict]) -> list[dict]:
-        """Make one batched LLM request and audit the request and raw response."""
+        """One batched LLM request; logs the request and the raw response."""
         if not batch:
             return []
 
         payload = [
             {
                 "claim": item["claim"],
-                "evidence": item["evidence"],
+                "evidence": cls._slim_evidence(item.get("evidence", [])),
                 "retrieval_error": item.get("retrieval_error"),
             }
             for item in batch
@@ -60,26 +85,23 @@ class ResponseGenerator:
             "claim": json.dumps([item["claim"] for item in batch], ensure_ascii=False),
             "context": json.dumps(payload, ensure_ascii=False, default=str),
         }
-        prompt = PromptBuilder.build()
-        prompt_value = prompt.invoke(inputs)
+        prompt_value = PromptBuilder.build().invoke(inputs)
         messages = [
-            {"role": getattr(message, "type", "unknown"),
-             "content": getattr(message, "content", str(message))}
-            for message in prompt_value.to_messages()
+            {"role": getattr(m, "type", "unknown"),
+             "content": getattr(m, "content", str(m))}
+            for m in prompt_value.to_messages()
         ]
         request_id = datetime.now(timezone.utc).isoformat()
 
         try:
             llm = LLM.get_llm()
-            # Invoke the model with the exact rendered messages so the logged
-            # request matches what was submitted.
             response = llm.invoke(prompt_value.to_messages())
             raw_content = cls._content_as_text(response)
             cls._append_log({
                 "timestamp": request_id,
                 "event": "llm_response",
                 "request": {"messages": messages},
-                "parameters": dict(cls.MODEL_PARAMETERS),
+                "parameters": dict(LLM.PARAMS),
                 "raw_response": raw_content,
             })
         except Exception as exc:
@@ -89,7 +111,7 @@ class ResponseGenerator:
                     "timestamp": request_id,
                     "event": "llm_error",
                     "request": {"messages": messages},
-                    "parameters": dict(cls.MODEL_PARAMETERS),
+                    "parameters": dict(LLM.PARAMS),
                     "error_type": type(exc).__name__,
                     "error": str(exc),
                 })
@@ -98,24 +120,24 @@ class ResponseGenerator:
             raise
 
         try:
-            result = json.loads(raw_content)
+            result = cls._parse_json(raw_content)
         except json.JSONDecodeError as exc:
             raise ValueError("LLM response was not valid JSON.") from exc
         if not isinstance(result, dict) or not isinstance(result.get("predictions"), list):
             raise ValueError("LLM JSON must contain a 'predictions' array.")
 
-        predictions = result["predictions"]
-        expected_ids = {item["claim"]["claim_id"] for item in batch}
-        returned_ids = [
-            prediction.get("claim_id")
-            for prediction in predictions
-            if isinstance(prediction, dict)
-        ]
-        if (
-            len(returned_ids) != len(predictions)
-            or len(returned_ids) != len(expected_ids)
-            or set(returned_ids) != expected_ids
-            or len(set(returned_ids)) != len(returned_ids)
-        ):
-            raise ValueError("LLM predictions do not match the input claim IDs.")
-        return predictions
+        # Lenient on shape, strict on content: keep only well-formed predictions for
+        # known claim ids (first occurrence). Anything missing is failed closed
+        # (cannot_verify) by the verifier instead of discarding the whole batch.
+        expected = {item["claim"]["claim_id"] for item in batch}
+        seen, valid = set(), []
+        for prediction in result["predictions"]:
+            if not isinstance(prediction, dict):
+                continue
+            cid = prediction.get("claim_id")
+            if cid in expected and cid not in seen:
+                seen.add(cid)
+                valid.append(prediction)
+        if not valid:
+            raise ValueError("LLM predictions did not contain any known claim IDs.")
+        return valid

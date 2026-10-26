@@ -1,54 +1,21 @@
-from app.ingestion.embedding.embedder import (
-    Embedder
-)
-
-from app.ingestion.vectordb.qdrant_client import (
-    QdrantManager
-)
-
-from app.ingestion.retrieval.bm25_index import (
-    BM25Indexer
-)
+from app.ingestion.embedding.embedder import Embedder
+from app.ingestion.retrieval.bm25_index import BM25Indexer
+from app.ingestion.vectordb.qdrant_client import QdrantManager
 
 
 class HybridRetriever:
 
     def __init__(self):
-
         self.qdrant = QdrantManager()
-
         self.bm25 = BM25Indexer()
 
-    def retrieve(
-        self,
-        query,
-        dense_top_k=8,
-        sparse_top_k=8,
-    ):
+    def retrieve(self, query, dense_top_k=15, sparse_top_k=15, document_ids=None):
+        query_embedding = Embedder.embed_query(query)
 
-        # Query embedding for semantic search
-        query_embedding = Embedder.embed(
-            [query]
-        )[0]
+        dense_results = self.qdrant.semantic_search(
+            query_embedding, top_k=dense_top_k, document_ids=document_ids)
 
-        # Dense retrieval from Qdrant
-        dense_results = (
-            self.qdrant.semantic_search(
-                query_embedding,
-                top_k=dense_top_k
-            )
-        )
+        sparse_results = self.bm25.search(
+            query, top_k=sparse_top_k, document_ids=document_ids)
 
-        # Sparse retrieval from BM25
-        sparse_results = (
-            self.bm25.search(
-                query,
-                top_k=sparse_top_k
-            )
-        )
-
-        return (
-            query_embedding,
-            dense_results,
-            sparse_results
-        )
+        return query_embedding, dense_results, sparse_results
