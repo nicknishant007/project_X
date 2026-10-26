@@ -1,3 +1,263 @@
 {
-  "predictions": []
+  "predictions": [
+    {
+      "claim_id": "C2",
+      "checks": {
+        "figure": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "after 26 weeks, baseline HbA1c (8.6%) was reduced by 1.3% with iGlarLixi and 1.1% with BIAsp 30, meeting noninferiority (least squares [LS] mean difference 0.2% [97.5% CI 0.4, 0.1]; P < 0.001).",
+          "source_values": [
+            {
+              "value": 1.3,
+              "measure": "HbA1c reduction",
+              "unit": "percentage points",
+              "arm": "iGlarLixi",
+              "timepoint": "26 weeks"
+            },
+            {
+              "value": 1.1,
+              "measure": "HbA1c reduction",
+              "unit": "percentage points",
+              "arm": "BIAsp 30",
+              "timepoint": "26 weeks"
+            }
+          ],
+          "reason": "The evidence states HbA1c reductions of 1.3% for iGlarLixi and 1.1% for BIAsp 30, and P < 0.001 for superiority. However, the claim includes standard deviations (+/- 0.1%) not present in the evidence and a 95% CI (-0.4, -0.1) which differs from the 97.5% CI (0.4, 0.1) for noninferiority stated in the evidence, and no CI is provided for superiority."
+        },
+        "population": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "adults with suboptimally controlled basal insulin-treated type 2 diabetes (HbA1c ‡7.5% and #10%) were randomized to once-daily iGlarLixi or twice-daily BIAsp 30.",
+          "source_values": null,
+          "reason": "The evidence describes the population as 'adults with suboptimally controlled basal insulin-treated type 2 diabetes', which matches the claim's 'T2DM suboptimally controlled on basal insulin'."
+        },
+        "drug_indication": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "adults with suboptimally controlled basal insulin-treated type 2 diabetes (HbA1c ‡7.5% and #10%) were randomized to once-daily iGlarLixi or twice-daily BIAsp 30.",
+          "source_values": null,
+          "reason": "The evidence confirms the comparison of 'once-daily iGlarLixi' versus 'twice-daily BIAsp 30', matching the claim."
+        },
+        "actually_stated": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "after 26 weeks, baseline HbA1c (8.6%) was reduced by 1.3% with iGlarLixi and 1.1% with BIAsp 30, meeting noninferiority (least squares [LS] mean difference 0.2% [97.5% CI 0.4, 0.1]; P < 0.001). iGlarLixi was also superior versus BIAsp 30 for HbA1c reduction (P < 0.001).",
+          "source_values": null,
+          "reason": "While the evidence states the HbA1c reductions (1.3% and 1.1%) and superiority (P < 0.001), it does not explicitly report the standard deviations (+/- 0.1%) or the specific 95% CI (-0.4, -0.1) as presented in the claim."
+        }
+      }
+    },
+    {
+      "claim_id": "C3",
+      "checks": {
+        "figure": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "Greater reductions in HbA1c from baseline (8.1%; 65mmol/mol) were achieved with iGlarLixi compared with iGlar and Lixi (-1.6%, -1.3%, -0.9%, respectively); reaching mean final HbA1c levels of 6.5% (48mmol/mol) for iGlarLixi, versus 6.8% (51mmol/mol) and 7.3% (56mmol/mol) for iGlar and Lixi, respectively (both p<0.0001).",
+          "source_values": [
+            {
+              "value": 1.6,
+              "measure": "HbA1c reduction",
+              "unit": "%",
+              "arm": "iGlarLixi",
+              "timepoint": "30 weeks"
+            },
+            {
+              "value": 1.3,
+              "measure": "HbA1c reduction",
+              "unit": "%",
+              "arm": "iGlar",
+              "timepoint": "30 weeks"
+            }
+          ],
+          "reason": "The evidence states HbA1c reductions of 1.6% for iGlarLixi and 1.3% for iGlar. A 1.6% reduction is not approximately '2x greater' than a 1.3% reduction (1.6/1.3 = 1.23). The p-value and timepoint match."
+        },
+        "population": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "in type 2 diabetes inadequately controlled on metformin ± a second oral glucose-lowering drug.",
+          "source_values": null,
+          "reason": "The evidence describes the population as 'type 2 diabetes inadequately controlled on metformin ± a second oral glucose-lowering drug', which matches the claim's 'T2DM inadequately controlled on oral agents'."
+        },
+        "drug_indication": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "LixiLan (iGlarLixi), a novel titratable fixed-ratio combination of insulin glargine (iGlar):lixisenatide (Lixi) compared with both components, iGlar and Lixi, given separately in type 2 diabetes inadequately controlled on metformin ± a second oral glucose-lowering drug.",
+          "source_values": null,
+          "reason": "The evidence confirms the comparison of 'iGlarLixi' versus 'iGlar', matching the claim's 'SOLIQUA (iGlarLixi) vs basal insulin (iGlar 100 U/mL)'."
+        },
+        "actually_stated": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "Greater reductions in HbA1c from baseline (8.1%; 65mmol/mol) were achieved with iGlarLixi compared with iGlar and Lixi (-1.6%, -1.3%, -0.9%, respectively); reaching mean final HbA1c levels of 6.5% (48mmol/mol) for iGlarLixi, versus 6.8% (51mmol/mol) and 7.3% (56mmol/mol) for iGlar and Lixi, respectively (both p<0.0001).",
+          "source_values": null,
+          "reason": "The evidence provides the specific HbA1c reductions (-1.6% for iGlarLixi and -1.3% for iGlar) and the p-value (p<0.0001) at Week 30. However, it does not explicitly state that the reduction was '~2x greater' with SOLIQUA, which is an interpretation or calculation not directly reported."
+        }
+      }
+    },
+    {
+      "claim_id": "C4",
+      "checks": {
+        "figure": {
+          "status": "unclear",
+          "evidence_page": null,
+          "evidence_span": null,
+          "source_values": null,
+          "reason": "The evidence states that a 'greater proportion' or 'higher' percentage of participants achieved HbA1c <7% with iGlarLixi than BIAsp 30, but the specific percentages (42.20% vs 31.80%) and the Odds Ratio (OR 1.65; 95% CI 1.25-2.19) are not explicitly provided in the retrieved evidence."
+        },
+        "population": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "adults with suboptimally controlled basal insulin-treated type 2 diabetes (HbA1c ‡7.5% and #10%) were randomized to once-daily iGlarLixi or twice-daily BIAsp 30.",
+          "source_values": null,
+          "reason": "The evidence describes the population as 'adults with suboptimally controlled basal insulin-treated type 2 diabetes', which matches the claim's 'T2DM suboptimally controlled on basal insulin'."
+        },
+        "drug_indication": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "To directly compare the efficacy and safety of a fixed-ratio combination, of insulin glargine 100 units/mL and the glucagon-like peptide 1 receptor agonist lixisenatide (iGlarLixi), with those of a premix insulin analog, biphasic aspart insulin 30 (30% insulin aspart and 70% insulin aspart protamine) (BIAsp 30) as treatment advancement in type 2 diabetes suboptimally controlled on basal insulin plus oral antihyperglycemic drugs (OADs).",
+          "source_values": null,
+          "reason": "The evidence confirms the comparison of 'iGlarLixi' versus 'premix insulin analog, biphasic aspart insulin 30 (BIAsp 30)', matching the claim."
+        },
+        "actually_stated": {
+          "status": "unclear",
+          "evidence_page": null,
+          "evidence_span": "The percentage of participants who reached HbA1c target <7% was higher in the iGlarLixi group than in the BIAsp 30 group (Fig. 2) (exploratory end point).",
+          "source_values": null,
+          "reason": "While the evidence states that a higher percentage of participants achieved HbA1c <7% with iGlarLixi, it does not explicitly report the specific percentages (42.20% vs 31.80%) or the Odds Ratio (OR 1.65; 95% CI 1.25-2.19) as claimed."
+        }
+      }
+    },
+    {
+      "claim_id": "C5",
+      "checks": {
+        "figure": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "Mean body weight decreased by 0.7 kg with iGlarLixi and increased by 0.7 kg with iGlar (1.4 kg difference, P < 0.0001).",
+          "source_values": [
+            {
+              "value": 0.7,
+              "measure": "body weight decrease",
+              "unit": "kg",
+              "arm": "iGlarLixi",
+              "timepoint": null
+            }
+          ],
+          "reason": "The evidence states that 'Mean body weight decreased by 0.7 kg with iGlarLixi'. A decrease of 0.7 kg is a change in weight, not 'weight neutral'."
+        },
+        "population": {
+          "status": "match",
+          "evidence_page": 1,
+          "evidence_span": "Efficacy and Safety of LixiLan, a Titratable Fixed-Ratio Combination of Insulin Glargine Plus Lixisenatide in Type 2 Diabetes Inadequately Controlled on Basal Insulin and Metformin: The LixiLan-L Randomized Trial",
+          "source_values": null,
+          "reason": "The evidence title explicitly states the population as 'Type 2 Diabetes Inadequately Controlled on Basal Insulin and Metformin', which matches the claim."
+        },
+        "drug_indication": {
+          "status": "match",
+          "evidence_page": 1,
+          "evidence_span": "Efficacy and Safety of LixiLan, a Titratable Fixed-Ratio Combination of Insulin Glargine Plus Lixisenatide in Type 2 Diabetes Inadequately Controlled on Basal Insulin and Metformin: The LixiLan-L Randomized Trial",
+          "source_values": null,
+          "reason": "The evidence title refers to 'LixiLan, a Titratable Fixed-Ratio Combination of Insulin Glargine Plus Lixisenatide', which is iGlarLixi, matching the molecule in the claim."
+        },
+        "actually_stated": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "Mean body weight decreased by 0.7 kg with iGlarLixi and increased by 0.7 kg with iGlar (1.4 kg difference, P < 0.0001).",
+          "source_values": null,
+          "reason": "The evidence explicitly states that 'Mean body weight decreased by 0.7 kg with iGlarLixi', which contradicts the claim of 'Weight neutral'."
+        }
+      }
+    },
+    {
+      "claim_id": "C6",
+      "checks": {
+        "figure": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "The proportion of participants with at least one hypoglycemic event was lower in the iGlarLixi group compared with the BIAsp 30 group (odds ratio [OR] 0.62 [95% CI 0.47, 0.81]) (Fig. 3). Lower incidence of hypoglycemia with iGlarLixi versus BIAsp 30 was also observed across level 1 and level 2 hypoglycemia categories (Fig. 3).",
+          "source_values": [
+            {
+              "value": 0.62,
+              "measure": "odds ratio",
+              "unit": null,
+              "arm": "iGlarLixi vs BIAsp 30",
+              "timepoint": null
+            }
+          ],
+          "reason": "The evidence states a 'lower incidence of hypoglycemia... across level 1 and level 2 hypoglycemia categories' with iGlarLixi. However, the Odds Ratio provided in the evidence is 0.62 (95% CI 0.47, 0.81) for 'at least one hypoglycemic event', which is different from the claimed OR 0.45 (0.28, 0.73) specifically for level-2 hypoglycemia."
+        },
+        "population": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "adults with suboptimally controlled basal insulin-treated type 2 diabetes (HbA1c ‡7.5% and #10%) were randomized to once-daily iGlarLixi or twice-daily BIAsp 30.",
+          "source_values": null,
+          "reason": "The evidence describes the population as 'adults with suboptimally controlled basal insulin-treated type 2 diabetes', which matches the claim's 'T2DM suboptimally controlled on basal insulin'."
+        },
+        "drug_indication": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "To directly compare the efficacy and safety of a fixed-ratio combination, of insulin glargine 100 units/mL and the glucagon-like peptide 1 receptor agonist lixisenatide (iGlarLixi), with those of a premix insulin analog, biphasic aspart insulin 30 (30% insulin aspart and 70% insulin aspart protamine) (BIAsp 30) as treatment advancement in type 2 diabetes suboptimally controlled on basal insulin plus oral antihyperglycemic drugs (OADs).",
+          "source_values": null,
+          "reason": "The evidence confirms the comparison of 'iGlarLixi' versus 'premix insulin analog, biphasic aspart insulin 30 (BIAsp 30)', matching the claim."
+        },
+        "actually_stated": {
+          "status": "mismatch",
+          "evidence_page": null,
+          "evidence_span": "Lower incidence of hypoglycemia with iGlarLixi versus BIAsp 30 was also observed across level 1 and level 2 hypoglycemia categories (Fig. 3).",
+          "source_values": null,
+          "reason": "While the evidence states a 'lower incidence of hypoglycemia... across level 1 and level 2 hypoglycemia categories' with iGlarLixi, it does not explicitly report the specific Odds Ratio of 0.45 (0.28, 0.73) for level-2 hypoglycemia as claimed. The OR provided is for 'at least one hypoglycemic event' and is different."
+        }
+      }
+    },
+    {
+      "claim_id": "C7",
+      "checks": {
+        "figure": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "Mean body weight decreased by 0.7 kg with iGlarLixi and increased by 0.7 kg with iGlar (1.4 kg difference, P < 0.0001). iGlarLixi was also superior to BIAsp 30 for body weight change (LS mean difference 1.9 kg [95% CI 2.3, 1.4]). In this post hoc PSM analysis, patients who took iGlarLixi had superior results compared with those taking a basal-bolus regimen, including individual endpoints and composite assessments such as achievement of HbA1c\\7% (\\53mmol/mol) while remaining free from weight gain and hypoglycemia.",
+          "source_values": [
+            {
+              "value": 0.7,
+              "measure": "body weight decrease",
+              "unit": "kg",
+              "arm": "iGlarLixi (LixiLan-L)",
+              "timepoint": null
+            },
+            {
+              "value": 1.9,
+              "measure": "LS mean difference in body weight change",
+              "unit": "kg",
+              "arm": "iGlarLixi vs BIAsp 30 (SoliMix)",
+              "timepoint": null
+            }
+          ],
+          "reason": "Evidence from LixiLan-L shows a decrease of 0.7 kg with iGlarLixi. Evidence from SoliMix shows iGlarLixi was superior for body weight change. Evidence from the PSM analysis indicates iGlarLixi patients remained free from weight gain. All support a 'weight benefit'."
+        },
+        "population": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "736 basal insulin-treated patients (mean diabetes duration 12 years, BMI 31 kg/m²) were randomized 1:1 to open-label, once-daily iGlarLixi or iGlar. In SoliMix, adults with suboptimally controlled basal insulin-treated type 2 diabetes (HbA1c ‡7.5% and #10%) were randomized to once-daily iGlarLixi or twice-daily BIAsp 30. In this propensity score matching analysis... in patients with type 2 diabetes uncontrolled on basal insulin.",
+          "source_values": null,
+          "reason": "The evidence from LixiLan-L, SoliMix, and the PSM analysis consistently describes populations of 'basal insulin-treated patients' or 'type 2 diabetes uncontrolled on basal insulin', matching the claim's 'T2DM switching from basal insulin'."
+        },
+        "drug_indication": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "Mean body weight decreased by 0.7 kg with iGlarLixi and increased by 0.7 kg with iGlar (1.4 kg difference, P < 0.0001). iGlarLixi was also superior to BIAsp 30 for body weight change (LS mean difference 1.9 kg [95% CI 2.3, 1.4]). In this propensity score matching analysis... we assessed the efficacy and safety of iGlarLixi... compared with that of basal-bolus insulin in patients with type 2 diabetes uncontrolled on basal insulin.",
+          "source_values": null,
+          "reason": "The evidence from LixiLan-L, SoliMix, and the PSM analysis all refer to 'iGlarLixi' in the context of patients on basal insulin, matching the claim."
+        },
+        "actually_stated": {
+          "status": "match",
+          "evidence_page": null,
+          "evidence_span": "Mean body weight decreased by 0.7 kg with iGlarLixi and increased by 0.7 kg with iGlar (1.4 kg difference, P < 0.0001). iGlarLixi was also superior to BIAsp 30 for body weight change (LS mean difference 1.9 kg [95% CI 2.3, 1.4]). In this post hoc PSM analysis, patients who took iGlarLixi had superior results compared with those taking a basal-bolus regimen, including individual endpoints and composite assessments such as achievement of HbA1c\\7% (\\53mmol/mol) while remaining free from weight gain and hypoglycemia.",
+          "source_values": null,
+          "reason": "The evidence from LixiLan-L, SoliMix, and the propensity-score-matching analysis explicitly reports findings that support a 'weight benefit' with iGlarLixi in patients switching from basal insulin, directly aligning with the claim."
+        }
+      }
+    }
+  ]
 }

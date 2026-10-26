@@ -12,7 +12,7 @@ from app.generation.response_generator import ResponseGenerator
 from app.generation.verifier import ClaimVerifier
 from app.ingestion.retrieval.retrieval_pipeline import RetrievalPipeline
 
-CLAIM_BATCH_SIZE = 3   # claims per LLM call; one bad batch no longer sinks every claim
+CLAIM_BATCH_SIZE = 8   # claims per LLM call (all evidence is retrieved first, then sent in batches)
 
 _PDF_RE = re.compile(r"[^\s()\[\],;]+\.pdf", re.IGNORECASE)
 _ALIAS_STOPWORDS = {"plus", "abstract", "prescribing", "information", "paper", "papers", "page"}
@@ -55,6 +55,36 @@ class RAGPipeline:
 
         return list(dict.fromkeys(found))
 
+    @staticmethod
+    def resolve_for_claim(claim: dict, known_ids: list[str]) -> list[str]:
+        """
+        Pick the documents that belong to a claim.
+          1. explicit claim["document_id"] / claim["document_ids"] (optional override)
+          2. claim_id appears as a token in the document id:
+                C2 -> "C2C4C6 (1)" ; C7 -> "C5C7 (3)" and "C7" ; C3 -> "C3"
+          3. fallback: parse the free-text cited_paper (filename / alias)
+        Returns [] when nothing matches -> the claim fails closed.
+        """
+        explicit = claim.get("document_ids") or claim.get("document_id") or []
+        if isinstance(explicit, str):
+            explicit = [explicit]
+        wanted = {_norm(x) for x in explicit}
+        hits = [i for i in known_ids if _norm(i) in wanted]
+        if hits:
+            return hits
+
+        cid = (claim.get("claim_id") or "").strip().upper()
+        if cid:
+            matched = []
+            for doc_id in known_ids:
+                tokens = {t.upper() for t in re.findall(r"[A-Za-z]+\d+", doc_id)}
+                if cid in tokens or _norm(doc_id) == _norm(cid):
+                    matched.append(doc_id)
+            if matched:
+                return matched
+
+        return RAGPipeline.resolve_documents(claim.get("cited_paper", ""), known_ids)
+
     # ------------------------------------------------------------------
     # Evidence retrieval (strictly limited to the cited paper(s))
     # ------------------------------------------------------------------
@@ -66,16 +96,16 @@ class RAGPipeline:
             claim_id = claim["claim_id"]
             print(f"\nRetrieving evidence for claim: {claim_id}")
             try:
-                doc_ids = self.resolve_documents(claim.get("cited_paper", ""), known_ids)
+                doc_ids = self.resolve_for_claim(claim, known_ids)
                 if not doc_ids:
                     raise LookupError(
-                        f"Cited paper {claim.get('cited_paper')!r} is not indexed "
-                        f"(indexed: {known_ids or 'nothing'}). Ingest the PDF first. "
+                        f"No indexed document matches claim {claim_id!r} "
+                        f"(indexed: {known_ids or 'nothing'}). Name the PDF after the claim id "
+                        "(e.g. C2C4C6.pdf) or add a 'document_id' field to the claim. "
                         "Refusing to use evidence from another paper."
                     )
                 per_doc = top_k if len(doc_ids) == 1 else max(3, math.ceil(top_k / len(doc_ids)) + 1)
-                query = (f"{claim['text']}\nPopulation: {claim.get('population', '')}\n"
-                         f"Molecule: {claim.get('molecule', '')}")
+                query = claim["text"]   # the claim text IS the retrieval query
 
                 chunks = []
                 for doc_id in doc_ids:
